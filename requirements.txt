@@ -1,2 +1,3 @@
 configparser~=6.0.1
 python3-nmap~=1.6.0
+mailersend~=0.5.6
