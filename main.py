@@ -16,7 +16,7 @@ def to_list(string: str) -> list:
 
 def load_config_values() -> tuple[list, str, str, list]:
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
     to_scan = config['DEFAULT']['IpRangesToScan']
     notification_name = config['DEFAULT']['OfflineNotificationName']
