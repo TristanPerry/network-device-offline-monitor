@@ -27,9 +27,10 @@ def load_config_values() -> tuple[list, str, str, list]:
     return to_list(to_scan), notification_name, notification_email, to_list(required_ips)
 
 
-def up(nmap_result: dict) -> bool:
-    # Not all nmap results have a state (e.g. if they are summary or 'debug' type dict entries)
-    return 'state' in nmap_result and nmap_result['state']['state'] == 'up'
+def up(ip: str, nmap_result: dict) -> bool:
+    # nmap results seem to vary sometimes, but this seems best to 'determine' the right result
+    result = nmap_result[ip] if ip in nmap_result else nmap_result
+    return 'state' in result and result['state']['state'] == 'up'
 
 
 def get_active_local_ips(to_scan: list) -> list:
@@ -48,7 +49,7 @@ def get_active_local_ips(to_scan: list) -> list:
         logger.debug('Results for host range %s', host)
         logger.debug(results)
 
-        up_ips = {ip: result for ip, result in results.items() if up(result)}
+        up_ips = {ip: result for ip, result in results.items() if up(ip, result)}
 
         up_ips_list = list(up_ips.keys())
         logger.debug('%s IPs are UP for host range %s', up_ips_list, host)
@@ -116,7 +117,7 @@ def ping_potentially_offline_ips(ips_to_check: list) -> list:
         logger.debug("ping_scan result for IP %s", ip)
         logger.debug(ping_result)
 
-        if not up(ping_result):
+        if not up(ip, ping_result):
             definitely_offline_ips.append(ip)
 
     logger.debug("Determined that IPs %s were offline based on the initial list of %s", definitely_offline_ips,
