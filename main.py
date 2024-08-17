@@ -14,17 +14,17 @@ def to_list(string: str) -> list:
     return list(filter(None, split))
 
 
-def load_config_values() -> tuple[list, str, str, list]:
+def load_config_values() -> tuple[list, list, dict]:
     config = configparser.ConfigParser()
+    config.optionxform = str
     config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 
-    to_scan = config['DEFAULT']['IpRangesToScan']
-    notification_name = config['DEFAULT']['OfflineNotificationName']
-    notification_email = config['DEFAULT']['OfflineNotificationEmail']
-    required_ips = config['DEFAULT']['RequiredIps']
-    logger.debug('Config loaded. (to_scan) %s, (email) %s, (ips) %s', to_scan, notification_email, required_ips)
+    to_scan = to_list(config['IP']['IpRangesToScan'])
+    required = to_list(config['IP']['RequiredIps'])
+    email_config = dict(config['Email'])
+    logger.debug('Config loaded. (to_scan) %s, (ips) %s, (email_config) %s', to_scan, required, email_config)
 
-    return to_list(to_scan), notification_name, notification_email, to_list(required_ips)
+    return to_scan, required, email_config
 
 
 def up(ip: str, nmap_result: dict) -> bool:
@@ -58,33 +58,33 @@ def get_active_local_ips(to_scan: list) -> list:
     return active_ips_in_range
 
 
-def send_email_notification(up_ips: list, error_ips: list, notification_name: str, notification_email: str) -> None:
-    logger.error('IP(s) %s are offline, sending email to %s', error_ips, notification_email)
+def send_email_notification(up_ips: list, error_ips: list, email_config: dict) -> None:
+    logger.error('IP(s) %s are offline, sending email to %s', error_ips, email_config['NameTo'])
     mailer = emails.NewEmail(os.getenv('MAILERSEND_API_KEY'))
 
     mail_body = {}
 
     mail_from = {
-        "name": "Offline Notifier",
-        "email": notification_email,
+        "name": email_config['NameFrom'],
+        "email": email_config['EmailFrom'],
     }
 
     recipients = [
         {
-            "name": notification_name,
-            "email": notification_email,
+            "name": email_config['NameTo'],
+            "email": email_config['EmailTo'],
         }
     ]
 
     reply_to = [
         {
-            "name": "Offline Notifier (No Reply)",
-            "email": notification_email,
+            "name": email_config['NameFrom'],
+            "email": email_config['EmailFrom'],
         }
     ]
 
     message = 'Warning! The following required IP addresses are offline: ' + ', '.join(error_ips) + ("\n\n "
-                "The detected online IPs were: " + ', '.join(up_ips))
+              'The detected online IPs were: ' + ', '.join(up_ips))
 
     mailer.set_mail_from(mail_from, mail_body)
     mailer.set_mail_to(recipients, mail_body)
@@ -139,7 +139,7 @@ def set_up_logging():
 if __name__ == '__main__':
     set_up_logging()
 
-    ip_ranges_to_scan, name, email, required_ips = load_config_values()
+    ip_ranges_to_scan, required_ips, email_conf = load_config_values()
     all_active_ips = get_active_local_ips(ip_ranges_to_scan)
     logger.info('All active IPs: %s', all_active_ips)
 
@@ -148,4 +148,4 @@ if __name__ == '__main__':
     logger.info('Offline IPs %s', offline_ips)
 
     if offline_ips:
-        send_email_notification(all_active_ips, offline_ips, name, email)
+        send_email_notification(all_active_ips, offline_ips, email_conf)
