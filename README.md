@@ -7,7 +7,7 @@ This script is designed for Linux since it uses nmap, however it should run on a
 
 ## Config
 
-The `config.ini` file is fairly basic: update the notification name and email address as needed. Then there's just two IP address items: the IP ranges to scan (`IpRangesToScan`), and which IP(s) are should be required as online (`RequiredIps`).
+The `config.ini` file is fairly basic: update the to/from notification name and email addresses as needed. Then there's just two IP address items: the IP ranges to scan (`IpRangesToScan`), and which IP(s) are should be required as online (`RequiredIps`).
 
 `IpRangesToScan` is basically the list of IP subnets that you want to scan. If you have a single router and all your devices have IP addresses in the same range (e.g. `192.168.1.30` and `192.168.1.202`) then you might just need to enter a single value here such as `192.168.1.0/24`.
 
